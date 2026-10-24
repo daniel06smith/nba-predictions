@@ -12,3 +12,4 @@ jobs:
           python-version: "3.12"
       - run: python --version
       - run: echo "Triggered by ${{ github.event_name }} on ${{ github.sha }}"
+      - run: exit 1
