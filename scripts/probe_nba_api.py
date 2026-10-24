@@ -4,6 +4,8 @@ import time
 
 from nba_api.live.nba.endpoints import scoreboard as live_scoreboard
 from nba_api.stats.endpoints import leaguegamelog, scoreboardv3
+from nba_api.live.nba.endpoints import boxscore as live_boxscore
+from nba_api.stats.endpoints import scheduleleaguev2
 
 
 def probe(name, fn):
@@ -31,6 +33,18 @@ def live_games():
     data = live_scoreboard.ScoreBoard(timeout=30).get_dict()
     return f"{len(data['scoreboard']['games'])} games today"
 
+
+def schedule(season):
+    df = scheduleleaguev2.ScheduleLeagueV2(season=season, timeout=30).season_games.get_data_frame()
+    print("     schedule columns:", df.columns.tolist())
+    return f"{len(df)} rows"
+
+
+def live_boxscore_first():
+    games = live_scoreboard.ScoreBoard(timeout=30).get_dict()["scoreboard"]["games"]
+    gid = games[0]["gameId"]
+    data = live_boxscore.BoxScore(game_id=gid, timeout=30).get_dict()
+    return f"game {gid}, status: {data['game']['gameStatusText']}"
 
 results = [
     probe("stats  LeagueGameLog 2026-27", lambda: gamelog("2026-27")),
