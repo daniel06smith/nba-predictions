@@ -2,7 +2,6 @@
 import sys
 import time
 
-from nba_api.live.nba.endpoints import boxscore as live_boxscore
 from nba_api.stats.endpoints import scheduleleaguev2
 from nba_api.live.nba.endpoints import scoreboard as live_scoreboard
 from nba_api.stats.endpoints import leaguegamelog, scoreboardv3
@@ -48,27 +47,18 @@ def live_boxscore_first():
     data = live_boxscore.BoxScore(game_id=gid, timeout=30).get_dict()
     return f"game {gid}, status: {data['game']['gameStatusText']}"
 
-def schedule(season):
+def schedule_finals(season):
     df = scheduleleaguev2.ScheduleLeagueV2(season=season, timeout=30).season_games.get_data_frame()
-    print("     schedule columns:", df.columns.tolist())
-    return f"{len(df)} rows"
-
-
-def live_boxscore_first():
-    games = live_scoreboard.ScoreBoard(timeout=30).get_dict()["scoreboard"]["games"]
-    gid = games[0]["gameId"]
-    data = live_boxscore.BoxScore(game_id=gid, timeout=30).get_dict()
-    return f"game {gid}, status: {data['game']['gameStatusText']}"
+    final = df[df["gameStatus"] == 3]
+    scored = final[["homeTeam_score", "awayTeam_score"]].notna().all(axis=1).sum()
+    return f"{len(df)} games, {len(final)} final, {scored} with scores"
 
 results = [
     probe("stats  LeagueGameLog 2026-27", lambda: gamelog("2026-27")),
     probe("stats  LeagueGameLog 2025-26", lambda: gamelog("2025-26")),
     probe("stats  ScoreboardV3", lambda: scoreboard_v3("2026-10-22")),
     probe("cdn    live ScoreBoard", live_games),
-    probe("sched ScheduleLeagueV2 2026-27", lambda: schedule("2026-27")),
-    probe("cdn   live BoxScore", live_boxscore_first),
-    probe("sched ScheduleLeagueV2 2026-27", lambda: schedule("2026-27")),
-    probe("cdn   live BoxScore", live_boxscore_first),
+    probe("sched  ScheduleLeagueV2 2026-27", lambda: schedule_finals("2026-27")),
 ]
 
 sys.exit(0 if all(results) else 1)
